@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CodeWeb - Simple Web Editor</title>
+  <title>CodeWeb - Secure Web Editor</title>
   <style>
     :root {
       --bg-light: #f8f9fa;
@@ -14,10 +14,15 @@
       --panel-dark: #1e1e1e;
       --primary: #4361ee;
       --primary-dark: #3a56d4;
+      --secondary: #7209b7;
+      --secondary-dark: #5e08a0;
       --border: #dee2e6;
       --border-dark: #333;
       --header-height: 60px;
       --button-height: 40px;
+      --tab-height: 60px;
+      --editor-bg: #f6f8fa;
+      --editor-bg-dark: #1e1e2e;
     }
     
     * {
@@ -34,6 +39,12 @@
       transition: background 0.3s, color 0.3s;
       min-height: 100vh;
       overflow-x: hidden;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
     
     .dark-mode {
@@ -54,17 +65,20 @@
       align-items: center;
       border-bottom: 1px solid var(--border);
       z-index: 100;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     
     .dark-mode .header {
       background: var(--panel-dark);
       border-color: var(--border-dark);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
     
     .header h1 {
       color: var(--primary);
       font-size: 1.3rem;
       white-space: nowrap;
+      font-weight: 700;
     }
     
     .menu-bar {
@@ -110,7 +124,8 @@
     
     .main-content {
       margin-top: var(--header-height);
-      padding-bottom: 60px;
+      padding-bottom: var(--tab-height);
+      height: calc(100vh - var(--header-height) - var(--tab-height));
     }
     
     .editor-container {
@@ -118,6 +133,7 @@
       flex-direction: column;
       gap: 10px;
       padding: 10px;
+      height: 100%;
     }
     
     .editor-pane {
@@ -125,6 +141,7 @@
       display: flex;
       flex-direction: column;
       min-height: 150px;
+      height: 100%;
     }
     
     .editor-header {
@@ -133,6 +150,13 @@
       border-radius: 5px 5px 0 0;
       font-weight: 500;
       font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .editor-header i {
+      color: var(--primary);
     }
     
     .dark-mode .editor-header {
@@ -145,7 +169,7 @@
       padding: 10px;
       border: 1px solid var(--border);
       border-top: none;
-      background: var(--panel-light);
+      background: var(--editor-bg);
       color: var(--text-light);
       font-family: 'Fira Code', monospace;
       font-size: 14px;
@@ -154,10 +178,11 @@
       resize: none;
       tab-size: 2;
       -webkit-overflow-scrolling: touch;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .dark-mode .code-editor {
-      background: var(--panel-dark);
+      background: var(--editor-bg-dark);
       color: var(--text-dark);
       border-color: var(--border-dark);
     }
@@ -184,22 +209,39 @@
       font-size: 0.85rem;
       height: var(--button-height);
       flex-shrink: 0;
+      transition: all 0.2s;
     }
     
     button:hover {
       background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button.secondary {
+      background: var(--secondary);
+    }
+    
+    button.secondary:hover {
+      background: var(--secondary-dark);
     }
     
     .output-container {
       padding: 0 10px 10px;
+      height: 100%;
+      display: none;
     }
     
     iframe {
       width: 100%;
-      height: 300px;
+      height: 100%;
       border: 1px solid var(--border);
       background: white;
       border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     
     .dark-mode iframe {
@@ -245,6 +287,7 @@
       background: rgba(67, 97, 238, 0.1);
       border-radius: 5px;
       cursor: pointer;
+      transition: all 0.2s;
     }
     
     .dark-mode .learning-item {
@@ -253,6 +296,7 @@
     
     .learning-item:hover {
       background: rgba(67, 97, 238, 0.3);
+      transform: translateX(5px);
     }
     
     .learning-item h3 {
@@ -279,10 +323,20 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    
+    .close-panel:hover {
+      background: rgba(0,0,0,0.1);
     }
     
     .dark-mode .close-panel {
       color: var(--text-dark);
+    }
+    
+    .dark-mode .close-panel:hover {
+      background: rgba(255,255,255,0.1);
     }
     
     .overlay {
@@ -294,6 +348,7 @@
       bottom: 0;
       background: rgba(0, 0, 0, 0.5);
       z-index: 150;
+      backdrop-filter: blur(3px);
     }
     
     .overlay.show {
@@ -310,24 +365,29 @@
       border-top: 1px solid var(--border);
       z-index: 100;
       padding: 5px 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
     }
     
     .dark-mode .mobile-tabs {
       background: var(--panel-dark);
       border-color: var(--border-dark);
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
     }
     
     .mobile-tabs button {
       flex: 1;
       background: none;
       border: none;
-      padding: 10px;
+      padding: 10px 5px;
       color: var(--text-light);
-      font-size: 0.8rem;
+      font-size: 0.7rem;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 3px;
+      transition: all 0.2s;
+      border-radius: 0;
+      height: auto;
     }
     
     .dark-mode .mobile-tabs button {
@@ -335,11 +395,78 @@
     }
     
     .mobile-tabs button i {
-      font-size: 1.1rem;
+      font-size: 1.3rem;
+      margin-bottom: 2px;
     }
     
     .mobile-tabs button.active {
       color: var(--primary);
+      transform: translateY(-5px);
+    }
+    
+    .mobile-tabs button.active i {
+      color: var(--primary);
+    }
+    
+    .run-screen {
+      position: fixed;
+      top: var(--header-height);
+      left: 0;
+      right: 0;
+      bottom: var(--tab-height);
+      background: white;
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+    }
+    
+    .dark-mode .run-screen {
+      background: var(--bg-dark);
+    }
+    
+    .run-header {
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .dark-mode .run-header {
+      border-color: var(--border-dark);
+    }
+    
+    .run-header h2 {
+      font-size: 1.1rem;
+      color: var(--primary);
+    }
+    
+    .run-iframe {
+      flex: 1;
+      border: none;
+      background: white;
+    }
+    
+    .dark-mode .run-iframe {
+      background: var(--bg-dark);
+    }
+    
+    .close-run {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    
+    .no-select {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
     
     @media (max-width: 768px) {
@@ -375,6 +502,10 @@
       .learning-panel {
         max-width: 100%;
       }
+      
+      .output-container {
+        display: none !important;
+      }
     }
     
     @media (min-width: 769px) {
@@ -385,17 +516,22 @@
       .editor-pane {
         min-height: 300px;
       }
+      
+      .output-container {
+        display: block;
+        height: 300px;
+      }
     }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-<body>
+<body class="no-select">
   <div class="header">
-    <h1>CodeWeb</h1>
+    <h1>CodeWeb <small style="font-size: 0.7rem; opacity: 0.7;">PRO</small></h1>
     <div class="menu-bar">
       <button onclick="toggleLearningPanel()"><i class="fas fa-book"></i> <span>Learning</span></button>
-      <button onclick="runCode()"><i class="fas fa-play"></i> <span>Run</span></button>
+      <button onclick="showRunScreen()"><i class="fas fa-play"></i> <span>Run</span></button>
       <button onclick="saveCode()"><i class="fas fa-save"></i> <span>Save</span></button>
       <button onclick="loadExample()"><i class="fas fa-lightbulb"></i> <span>Example</span></button>
       <button onclick="toggleMode()"><i class="fas fa-moon"></i> <span>Theme</span></button>
@@ -405,17 +541,17 @@
   <div class="main-content">
     <div class="editor-container">
       <div class="editor-pane active" id="html-pane">
-        <div class="editor-header">HTML</div>
+        <div class="editor-header"><i class="fab fa-html5"></i> HTML</div>
         <textarea id="html-code" class="code-editor" placeholder="Write HTML here..." spellcheck="false"></textarea>
       </div>
       
       <div class="editor-pane" id="css-pane">
-        <div class="editor-header">CSS</div>
+        <div class="editor-header"><i class="fab fa-css3-alt"></i> CSS</div>
         <textarea id="css-code" class="code-editor" placeholder="Write CSS here..." spellcheck="false"></textarea>
       </div>
       
       <div class="editor-pane" id="js-pane">
-        <div class="editor-header">JavaScript</div>
+        <div class="editor-header"><i class="fab fa-js-square"></i> JavaScript</div>
         <textarea id="js-code" class="code-editor" placeholder="Write JavaScript here..." spellcheck="false"></textarea>
       </div>
     </div>
@@ -424,7 +560,7 @@
       <button onclick="formatCode('html')"><i class="fas fa-indent"></i> Format HTML</button>
       <button onclick="formatCode('css')"><i class="fas fa-indent"></i> Format CSS</button>
       <button onclick="formatCode('js')"><i class="fas fa-indent"></i> Format JS</button>
-      <button onclick="clearCode()"><i class="fas fa-trash"></i> Clear</button>
+      <button class="secondary" onclick="clearCode()"><i class="fas fa-trash"></i> Clear</button>
     </div>
     
     <div class="output-container">
@@ -433,10 +569,19 @@
   </div>
   
   <div class="mobile-tabs">
-    <button class="active" onclick="switchTab('html')"><i class="fas fa-code"></i>HTML</button>
+    <button class="active" onclick="switchTab('html')"><i class="fab fa-html5"></i>HTML</button>
     <button onclick="switchTab('css')"><i class="fab fa-css3-alt"></i>CSS</button>
     <button onclick="switchTab('js')"><i class="fab fa-js-square"></i>JS</button>
-    <button onclick="runCode()"><i class="fas fa-play"></i>Run</button>
+    <button onclick="showRunScreen()" style="color: var(--primary);"><i class="fas fa-play"></i>RUN</button>
+    <button onclick="toggleLearningPanel()"><i class="fas fa-book"></i>Learn</button>
+  </div>
+  
+  <div class="run-screen" id="run-screen">
+    <div class="run-header">
+      <h2>Output Preview</h2>
+      <button class="close-run" onclick="hideRunScreen()">Close</button>
+    </div>
+    <iframe class="run-iframe" id="run-iframe" title="Code Output"></iframe>
   </div>
   
   <div class="overlay" id="overlay"></div>
@@ -446,48 +591,65 @@
     <h2>Learning Resources</h2>
     
     <div class="learning-item" onclick="insertCode('html-basic')">
-      <h3>HTML Basics</h3>
+      <h3><i class="fab fa-html5"></i> HTML Basics</h3>
       <p>Basic HTML structure with heading and paragraph</p>
     </div>
     
     <div class="learning-item" onclick="insertCode('css-basic')">
-      <h3>CSS Basics</h3>
+      <h3><i class="fab fa-css3-alt"></i> CSS Basics</h3>
       <p>Simple CSS styling for a container</p>
     </div>
     
     <div class="learning-item" onclick="insertCode('js-basic')">
-      <h3>JavaScript Basics</h3>
+      <h3><i class="fab fa-js-square"></i> JavaScript Basics</h3>
       <p>Simple function that shows an alert</p>
     </div>
     
     <div class="learning-item" onclick="insertCode('html-form')">
-      <h3>HTML Form</h3>
+      <h3><i class="fab fa-html5"></i> HTML Form</h3>
       <p>Basic form with input fields</p>
     </div>
     
     <div class="learning-item" onclick="insertCode('css-flex')">
-      <h3>CSS Flexbox</h3>
+      <h3><i class="fab fa-css3-alt"></i> CSS Flexbox</h3>
       <p>Simple flexbox layout example</p>
     </div>
     
     <div class="learning-item" onclick="insertCode('js-event')">
-      <h3>JavaScript Event</h3>
+      <h3><i class="fab fa-js-square"></i> JavaScript Event</h3>
       <p>Button click event handler</p>
     </div>
   </div>
 
   <script>
+    // Prevent context menu
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+    });
+    
+    // Prevent keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U
+      if (e.key === 'F12' || 
+          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
+          (e.ctrlKey && e.key === 'u')) {
+        e.preventDefault();
+      }
+    });
+    
     // DOM Elements
     const htmlEditor = document.getElementById('html-code');
     const cssEditor = document.getElementById('css-code');
     const jsEditor = document.getElementById('js-code');
     const outputFrame = document.getElementById('output');
+    const runFrame = document.getElementById('run-iframe');
     const learningPanel = document.getElementById('learning-panel');
     const overlay = document.getElementById('overlay');
     const htmlPane = document.getElementById('html-pane');
     const cssPane = document.getElementById('css-pane');
     const jsPane = document.getElementById('js-pane');
     const mobileTabButtons = document.querySelectorAll('.mobile-tabs button');
+    const runScreen = document.getElementById('run-screen');
     
     // Auto-complete tags when typing
     htmlEditor.addEventListener('keydown', function(e) {
@@ -522,6 +684,21 @@
           <head>
             <style>${css}</style>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <script>
+              // Disable right click
+              document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+              });
+              
+              // Disable keyboard shortcuts
+              document.addEventListener('keydown', function(e) {
+                if (e.key === 'F12' || 
+                    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
+                    (e.ctrlKey && e.key === 'u')) {
+                  e.preventDefault();
+                }
+              });
+            <\/script>
           </head>
           <body>${html}
             <script>${js}<\/script>
@@ -532,7 +709,21 @@
       const blob = new Blob([fullCode], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       outputFrame.src = url;
+      runFrame.src = url;
       URL.revokeObjectURL(url);
+    }
+    
+    // Show run screen (for mobile)
+    function showRunScreen() {
+      runCode();
+      runScreen.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+    
+    // Hide run screen
+    function hideRunScreen() {
+      runScreen.style.display = 'none';
+      document.body.style.overflow = '';
     }
     
     // Format code
@@ -570,7 +761,7 @@
     // Load example code
     function loadExample() {
       htmlEditor.value = `<div class="container">
-  <h1>Welcome to CodeWeb!</h1>
+  <h1>Welcome to CodeWeb PRO!</h1>
   <p>Edit this code and click "Run" to see changes.</p>
   <button onclick="showMessage()">Click Me</button>
 </div>`;
@@ -578,12 +769,17 @@
       cssEditor.value = `body {
   font-family: Arial, sans-serif;
   padding: 20px;
+  background: #f5f5f5;
 }
 
 .container {
   max-width: 600px;
   margin: 0 auto;
   text-align: center;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 button {
@@ -593,10 +789,16 @@ button {
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+button:hover {
+  background: #3a56d4;
+  transform: translateY(-2px);
 }`;
       
       jsEditor.value = `function showMessage() {
-  alert('Hello from CodeWeb!');
+  alert('Hello from CodeWeb PRO!');
 }`;
       
       runCode();
@@ -699,12 +901,16 @@ greet();`;
           cssEditor.value = `.flex-container {
   display: flex;
   gap: 10px;
+  padding: 20px;
+  background: #f0f0f0;
 }
 
 .flex-item {
   flex: 1;
   padding: 20px;
-  background: #f0f0f0;
+  background: white;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }`;
           break;
         case 'js-event':
