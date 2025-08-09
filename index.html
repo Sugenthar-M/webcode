@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeWeb - Simple Web Editor</title>
+  <style>
+    :root {
+      --bg-light: #f8f9fa;
+      --bg-dark: #121212;
+      --text-light: #212529;
+      --text-dark: #f8f9fa;
+      --panel-light: #ffffff;
+      --panel-dark: #1e1e1e;
+      --primary: #4361ee;
+      --primary-dark: #3a56d4;
+      --border: #dee2e6;
+      --border-dark: #333;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-light);
+      transition: background 0.3s, color 0.3s;
+      min-height: 100vh;
+    }
+    
+    .dark-mode {
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+    }
+    
+    .header {
+      padding: 12px 20px;
+      background: var(--panel-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .dark-mode .header {
+      background: var(--panel-dark);
+      border-color: var(--border-dark);
+    }
+    
+    .header h1 {
+      color: var(--primary);
+      font-size: 1.5rem;
+    }
+    
+    .menu-bar {
+      display: flex;
+      gap: 15px;
+    }
+    
+    .menu-bar button {
+      background: none;
+      border: none;
+      color: var(--text-light);
+      cursor: pointer;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 4px;
+    }
+    
+    .dark-mode .menu-bar button {
+      color: var(--text-dark);
+    }
+    
+    .menu-bar button:hover {
+      background: rgba(67, 97, 238, 0.1);
+    }
+    
+    .dark-mode .menu-bar button:hover {
+      background: rgba(67, 97, 238, 0.2);
+    }
+    
+    .editor-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      padding: 15px;
+    }
+    
+    .editor-pane {
+      flex: 1;
+      min-width: 300px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .editor-header {
+      padding: 8px 12px;
+      background: rgba(67, 97, 238, 0.1);
+      border-radius: 5px 5px 0 0;
+      font-weight: 500;
+    }
+    
+    .dark-mode .editor-header {
+      background: rgba(67, 97, 238, 0.2);
+    }
+    
+    .code-editor {
+      flex: 1;
+      min-height: 200px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-top: none;
+      background: var(--panel-light);
+      color: var(--text-light);
+      font-family: 'Fira Code', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      border-radius: 0 0 5px 5px;
+      resize: none;
+      tab-size: 2;
+    }
+    
+    .dark-mode .code-editor {
+      background: var(--panel-dark);
+      color: var(--text-dark);
+      border-color: var(--border-dark);
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 10px;
+      padding: 0 15px 15px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    button:hover {
+      background: var(--primary-dark);
+    }
+    
+    .output-container {
+      padding: 0 15px 15px;
+    }
+    
+    iframe {
+      width: 100%;
+      height: 300px;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 5px;
+    }
+    
+    .dark-mode iframe {
+      border-color: var(--border-dark);
+    }
+    
+    .learning-panel {
+      display: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 300px;
+      background: var(--panel-light);
+      border-left: 1px solid var(--border);
+      padding: 15px;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    
+    .dark-mode .learning-panel {
+      background: var(--panel-dark);
+      border-color: var(--border-dark);
+    }
+    
+    .learning-panel h2 {
+      margin-bottom: 15px;
+      color: var(--primary);
+    }
+    
+    .learning-item {
+      margin-bottom: 15px;
+      padding: 10px;
+      background: rgba(67, 97, 238, 0.1);
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    .dark-mode .learning-item {
+      background: rgba(67, 97, 238, 0.2);
+    }
+    
+    .learning-item:hover {
+      background: rgba(67, 97, 238, 0.3);
+    }
+    
+    .learning-item h3 {
+      margin-bottom: 5px;
+    }
+    
+    .close-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    
+    @media (max-width: 768px) {
+      .editor-container {
+        flex-direction: column;
+      }
+      
+      .editor-pane {
+        width: 100%;
+      }
+      
+      .learning-panel {
+        width: 100%;
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+  <div class="header">
+    <h1>CodeWeb</h1>
+    <div class="menu-bar">
+      <button onclick="toggleLearningPanel()"><i class="fas fa-book"></i> Learning</button>
+      <button onclick="runCode()"><i class="fas fa-play"></i> Run</button>
+      <button onclick="saveCode()"><i class="fas fa-save"></i> Save</button>
+      <button onclick="loadExample()"><i class="fas fa-lightbulb"></i> Example</button>
+      <button onclick="toggleMode()"><i class="fas fa-moon"></i> Theme</button>
+    </div>
+  </div>
+  
+  <div class="editor-container">
+    <div class="editor-pane">
+      <div class="editor-header">HTML</div>
+      <textarea id="html-code" class="code-editor" placeholder="Write HTML here..." spellcheck="false"></textarea>
+    </div>
+    
+    <div class="editor-pane">
+      <div class="editor-header">CSS</div>
+      <textarea id="css-code" class="code-editor" placeholder="Write CSS here..." spellcheck="false"></textarea>
+    </div>
+    
+    <div class="editor-pane">
+      <div class="editor-header">JavaScript</div>
+      <textarea id="js-code" class="code-editor" placeholder="Write JavaScript here..." spellcheck="false"></textarea>
+    </div>
+  </div>
+  
+  <div class="buttons">
+    <button onclick="formatCode('html')"><i class="fas fa-indent"></i> Format HTML</button>
+    <button onclick="formatCode('css')"><i class="fas fa-indent"></i> Format CSS</button>
+    <button onclick="formatCode('js')"><i class="fas fa-indent"></i> Format JS</button>
+    <button onclick="clearCode()"><i class="fas fa-trash"></i> Clear</button>
+  </div>
+  
+  <div class="output-container">
+    <iframe id="output" title="Code Output"></iframe>
+  </div>
+  
+  <div class="learning-panel" id="learning-panel">
+    <button class="close-panel" onclick="toggleLearningPanel()">&times;</button>
+    <h2>Learning Resources</h2>
+    
+    <div class="learning-item" onclick="insertCode('html-basic')">
+      <h3>HTML Basics</h3>
+      <p>Basic HTML structure with heading and paragraph</p>
+    </div>
+    
+    <div class="learning-item" onclick="insertCode('css-basic')">
+      <h3>CSS Basics</h3>
+      <p>Simple CSS styling for a container</p>
+    </div>
+    
+    <div class="learning-item" onclick="insertCode('js-basic')">
+      <h3>JavaScript Basics</h3>
+      <p>Simple function that shows an alert</p>
+    </div>
+    
+    <div class="learning-item" onclick="insertCode('html-form')">
+      <h3>HTML Form</h3>
+      <p>Basic form with input fields</p>
+    </div>
+    
+    <div class="learning-item" onclick="insertCode('css-flex')">
+      <h3>CSS Flexbox</h3>
+      <p>Simple flexbox layout example</p>
+    </div>
+    
+    <div class="learning-item" onclick="insertCode('js-event')">
+      <h3>JavaScript Event</h3>
+      <p>Button click event handler</p>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const htmlEditor = document.getElementById('html-code');
+    const cssEditor = document.getElementById('css-code');
+    const jsEditor = document.getElementById('js-code');
+    const outputFrame = document.getElementById('output');
+    const learningPanel = document.getElementById('learning-panel');
+    
+    // Auto-complete tags when typing
+    htmlEditor.addEventListener('keydown', function(e) {
+      if (e.key === '>') {
+        const cursorPos = this.selectionStart;
+        const textBefore = this.value.substring(0, cursorPos);
+        
+        // Check if we're at the start of a tag
+        const tagMatch = textBefore.match(/<([a-zA-Z][a-zA-Z0-9]*)$/);
+        if (tagMatch) {
+          e.preventDefault();
+          const tagName = tagMatch[1];
+          const insertText = `</${tagName}>`;
+          this.value = textBefore + '>' + insertText + this.value.substring(cursorPos);
+          
+          // Position cursor between the tags
+          this.selectionStart = cursorPos + 1;
+          this.selectionEnd = cursorPos + 1;
+        }
+      }
+    });
+    
+    // Run the code
+    function runCode() {
+      const html = htmlEditor.value;
+      const css = cssEditor.value;
+      const js = jsEditor.value;
+      
+      const fullCode = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <style>${css}</style>
+          </head>
+          <body>${html}
+            <script>${js}<\/script>
+          </body>
+        </html>
+      `;
+      
+      const blob = new Blob([fullCode], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      outputFrame.src = url;
+      URL.revokeObjectURL(url);
+    }
+    
+    // Format code
+    function formatCode(type) {
+      let editor, code;
+      
+      switch(type) {
+        case 'html':
+          editor = htmlEditor;
+          code = editor.value;
+          // Simple HTML formatting
+          code = code.replace(/></g, '>\n<');
+          break;
+        case 'css':
+          editor = cssEditor;
+          code = editor.value;
+          // Simple CSS formatting
+          code = code.replace(/\{/g, ' {\n  ')
+                    .replace(/\}/g, '\n}\n')
+                    .replace(/;/g, ';\n  ');
+          break;
+        case 'js':
+          editor = jsEditor;
+          code = editor.value;
+          // Simple JS formatting
+          code = code.replace(/\{/g, ' {\n  ')
+                    .replace(/\}/g, '\n}\n')
+                    .replace(/;/g, ';\n');
+          break;
+      }
+      
+      editor.value = code;
+    }
+    
+    // Load example code
+    function loadExample() {
+      htmlEditor.value = `<div class="container">
+  <h1>Welcome to CodeWeb!</h1>
+  <p>Edit this code and click "Run" to see changes.</p>
+  <button onclick="showMessage()">Click Me</button>
+</div>`;
+      
+      cssEditor.value = `body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+button {
+  padding: 10px 20px;
+  background: #4361ee;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}`;
+      
+      jsEditor.value = `function showMessage() {
+  alert('Hello from CodeWeb!');
+}`;
+      
+      runCode();
+    }
+    
+    // Save code to localStorage
+    function saveCode() {
+      const codeData = {
+        html: htmlEditor.value,
+        css: cssEditor.value,
+        js: jsEditor.value,
+        savedAt: new Date().toLocaleString()
+      };
+      
+      localStorage.setItem('codeweb-saved-code', JSON.stringify(codeData));
+      alert('Code saved successfully!');
+    }
+    
+    // Clear all editors
+    function clearCode() {
+      if (confirm('Are you sure you want to clear all code?')) {
+        htmlEditor.value = '';
+        cssEditor.value = '';
+        jsEditor.value = '';
+      }
+    }
+    
+    // Toggle dark/light mode
+    function toggleMode() {
+      document.body.classList.toggle('dark-mode');
+      localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    }
+    
+    // Toggle learning panel
+    function toggleLearningPanel() {
+      learningPanel.style.display = learningPanel.style.display === 'block' ? 'none' : 'block';
+    }
+    
+    // Insert code examples from learning panel
+    function insertCode(type) {
+      switch(type) {
+        case 'html-basic':
+          htmlEditor.value = `<h1>My First Heading</h1>
+<p>My first paragraph.</p>`;
+          break;
+        case 'css-basic':
+          cssEditor.value = `body {
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}`;
+          break;
+        case 'js-basic':
+          jsEditor.value = `function greet() {
+  alert('Hello World!');
+}
+
+greet();`;
+          break;
+        case 'html-form':
+          htmlEditor.value = `<form>
+  <label for="name">Name:</label>
+  <input type="text" id="name" name="name">
+  
+  <label for="email">Email:</label>
+  <input type="email" id="email" name="email">
+  
+  <button type="submit">Submit</button>
+</form>`;
+          break;
+        case 'css-flex':
+          cssEditor.value = `.flex-container {
+  display: flex;
+  gap: 10px;
+}
+
+.flex-item {
+  flex: 1;
+  padding: 20px;
+  background: #f0f0f0;
+}`;
+          break;
+        case 'js-event':
+          jsEditor.value = `document.getElementById('myButton').addEventListener('click', function() {
+  console.log('Button clicked!');
+});`;
+          break;
+      }
+      
+      toggleLearningPanel();
+    }
+    
+    // Initialize the app
+    function init() {
+      // Load saved code if exists
+      const savedCode = localStorage.getItem('codeweb-saved-code');
+      if (savedCode) {
+        const codeData = JSON.parse(savedCode);
+        htmlEditor.value = codeData.html;
+        cssEditor.value = codeData.css;
+        jsEditor.value = codeData.js;
+      }
+      
+      // Apply saved theme
+      if (localStorage.getItem('darkMode') === 'true') {
+        document.body.classList.add('dark-mode');
+      }
+      
+      // Run initial example
+      loadExample();
+    }
+    
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
