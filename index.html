@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>CodeWeb - Simple Web Editor</title>
   <style>
     :root {
@@ -16,6 +16,8 @@
       --primary-dark: #3a56d4;
       --border: #dee2e6;
       --border-dark: #333;
+      --header-height: 60px;
+      --button-height: 40px;
     }
     
     * {
@@ -26,11 +28,12 @@
     
     body {
       margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       background-color: var(--bg-light);
       color: var(--text-light);
       transition: background 0.3s, color 0.3s;
       min-height: 100vh;
+      overflow-x: hidden;
     }
     
     .dark-mode {
@@ -39,12 +42,18 @@
     }
     
     .header {
-      padding: 12px 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--header-height);
+      padding: 0 15px;
       background: var(--panel-light);
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid var(--border);
+      z-index: 100;
     }
     
     .dark-mode .header {
@@ -54,12 +63,20 @@
     
     .header h1 {
       color: var(--primary);
-      font-size: 1.5rem;
+      font-size: 1.3rem;
+      white-space: nowrap;
     }
     
     .menu-bar {
       display: flex;
-      gap: 15px;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 5px 0;
+    }
+    
+    .menu-bar::-webkit-scrollbar {
+      display: none;
     }
     
     .menu-bar button {
@@ -68,8 +85,11 @@
       color: var(--text-light);
       cursor: pointer;
       font-weight: 500;
-      padding: 5px 10px;
+      padding: 6px 8px;
       border-radius: 4px;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     
     .dark-mode .menu-bar button {
@@ -84,18 +104,27 @@
       background: rgba(67, 97, 238, 0.2);
     }
     
+    .menu-bar button i {
+      font-size: 0.9rem;
+    }
+    
+    .main-content {
+      margin-top: var(--header-height);
+      padding-bottom: 60px;
+    }
+    
     .editor-container {
       display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      padding: 15px;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px;
     }
     
     .editor-pane {
       flex: 1;
-      min-width: 300px;
       display: flex;
       flex-direction: column;
+      min-height: 150px;
     }
     
     .editor-header {
@@ -103,6 +132,7 @@
       background: rgba(67, 97, 238, 0.1);
       border-radius: 5px 5px 0 0;
       font-weight: 500;
+      font-size: 0.9rem;
     }
     
     .dark-mode .editor-header {
@@ -111,8 +141,8 @@
     
     .code-editor {
       flex: 1;
-      min-height: 200px;
-      padding: 12px;
+      min-height: 150px;
+      padding: 10px;
       border: 1px solid var(--border);
       border-top: none;
       background: var(--panel-light);
@@ -123,6 +153,7 @@
       border-radius: 0 0 5px 5px;
       resize: none;
       tab-size: 2;
+      -webkit-overflow-scrolling: touch;
     }
     
     .dark-mode .code-editor {
@@ -133,13 +164,14 @@
     
     .buttons {
       display: flex;
-      gap: 10px;
-      padding: 0 15px 15px;
+      gap: 8px;
+      padding: 0 10px 10px;
       flex-wrap: wrap;
+      justify-content: center;
     }
     
     button {
-      padding: 8px 16px;
+      padding: 8px 12px;
       border: none;
       border-radius: 5px;
       background: var(--primary);
@@ -149,6 +181,9 @@
       display: flex;
       align-items: center;
       gap: 5px;
+      font-size: 0.85rem;
+      height: var(--button-height);
+      flex-shrink: 0;
     }
     
     button:hover {
@@ -156,7 +191,7 @@
     }
     
     .output-container {
-      padding: 0 15px 15px;
+      padding: 0 10px 10px;
     }
     
     iframe {
@@ -177,12 +212,20 @@
       top: 0;
       right: 0;
       bottom: 0;
-      width: 300px;
+      width: 100%;
+      max-width: 350px;
       background: var(--panel-light);
       border-left: 1px solid var(--border);
       padding: 15px;
       overflow-y: auto;
-      z-index: 100;
+      z-index: 200;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+    
+    .learning-panel.show {
+      display: block;
+      transform: translateX(0);
     }
     
     .dark-mode .learning-panel {
@@ -193,6 +236,7 @@
     .learning-panel h2 {
       margin-bottom: 15px;
       color: var(--primary);
+      padding-right: 30px;
     }
     
     .learning-item {
@@ -213,29 +257,133 @@
     
     .learning-item h3 {
       margin-bottom: 5px;
+      font-size: 1rem;
+    }
+    
+    .learning-item p {
+      font-size: 0.85rem;
+      opacity: 0.8;
     }
     
     .close-panel {
       position: absolute;
-      top: 10px;
-      right: 10px;
+      top: 15px;
+      right: 15px;
       background: none;
       border: none;
-      font-size: 1.2rem;
+      font-size: 1.5rem;
       cursor: pointer;
+      color: var(--text-light);
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .dark-mode .close-panel {
+      color: var(--text-dark);
+    }
+    
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 150;
+    }
+    
+    .overlay.show {
+      display: block;
+    }
+    
+    .mobile-tabs {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--panel-light);
+      border-top: 1px solid var(--border);
+      z-index: 100;
+      padding: 5px 0;
+    }
+    
+    .dark-mode .mobile-tabs {
+      background: var(--panel-dark);
+      border-color: var(--border-dark);
+    }
+    
+    .mobile-tabs button {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 10px;
+      color: var(--text-light);
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    
+    .dark-mode .mobile-tabs button {
+      color: var(--text-dark);
+    }
+    
+    .mobile-tabs button i {
+      font-size: 1.1rem;
+    }
+    
+    .mobile-tabs button.active {
+      color: var(--primary);
     }
     
     @media (max-width: 768px) {
-      .editor-container {
-        flex-direction: column;
+      .header h1 {
+        font-size: 1.1rem;
+      }
+      
+      .menu-bar button span {
+        display: none;
+      }
+      
+      .menu-bar button i {
+        font-size: 1rem;
+      }
+      
+      .mobile-tabs {
+        display: flex;
       }
       
       .editor-pane {
-        width: 100%;
+        display: none;
+      }
+      
+      .editor-pane.active {
+        display: flex;
+      }
+      
+      .buttons button {
+        flex: 1 1 40%;
+        justify-content: center;
       }
       
       .learning-panel {
-        width: 100%;
+        max-width: 100%;
+      }
+    }
+    
+    @media (min-width: 769px) {
+      .editor-container {
+        flex-direction: row;
+      }
+      
+      .editor-pane {
+        min-height: 300px;
       }
     }
   </style>
@@ -246,41 +394,52 @@
   <div class="header">
     <h1>CodeWeb</h1>
     <div class="menu-bar">
-      <button onclick="toggleLearningPanel()"><i class="fas fa-book"></i> Learning</button>
-      <button onclick="runCode()"><i class="fas fa-play"></i> Run</button>
-      <button onclick="saveCode()"><i class="fas fa-save"></i> Save</button>
-      <button onclick="loadExample()"><i class="fas fa-lightbulb"></i> Example</button>
-      <button onclick="toggleMode()"><i class="fas fa-moon"></i> Theme</button>
+      <button onclick="toggleLearningPanel()"><i class="fas fa-book"></i> <span>Learning</span></button>
+      <button onclick="runCode()"><i class="fas fa-play"></i> <span>Run</span></button>
+      <button onclick="saveCode()"><i class="fas fa-save"></i> <span>Save</span></button>
+      <button onclick="loadExample()"><i class="fas fa-lightbulb"></i> <span>Example</span></button>
+      <button onclick="toggleMode()"><i class="fas fa-moon"></i> <span>Theme</span></button>
     </div>
   </div>
   
-  <div class="editor-container">
-    <div class="editor-pane">
-      <div class="editor-header">HTML</div>
-      <textarea id="html-code" class="code-editor" placeholder="Write HTML here..." spellcheck="false"></textarea>
+  <div class="main-content">
+    <div class="editor-container">
+      <div class="editor-pane active" id="html-pane">
+        <div class="editor-header">HTML</div>
+        <textarea id="html-code" class="code-editor" placeholder="Write HTML here..." spellcheck="false"></textarea>
+      </div>
+      
+      <div class="editor-pane" id="css-pane">
+        <div class="editor-header">CSS</div>
+        <textarea id="css-code" class="code-editor" placeholder="Write CSS here..." spellcheck="false"></textarea>
+      </div>
+      
+      <div class="editor-pane" id="js-pane">
+        <div class="editor-header">JavaScript</div>
+        <textarea id="js-code" class="code-editor" placeholder="Write JavaScript here..." spellcheck="false"></textarea>
+      </div>
     </div>
     
-    <div class="editor-pane">
-      <div class="editor-header">CSS</div>
-      <textarea id="css-code" class="code-editor" placeholder="Write CSS here..." spellcheck="false"></textarea>
+    <div class="buttons">
+      <button onclick="formatCode('html')"><i class="fas fa-indent"></i> Format HTML</button>
+      <button onclick="formatCode('css')"><i class="fas fa-indent"></i> Format CSS</button>
+      <button onclick="formatCode('js')"><i class="fas fa-indent"></i> Format JS</button>
+      <button onclick="clearCode()"><i class="fas fa-trash"></i> Clear</button>
     </div>
     
-    <div class="editor-pane">
-      <div class="editor-header">JavaScript</div>
-      <textarea id="js-code" class="code-editor" placeholder="Write JavaScript here..." spellcheck="false"></textarea>
+    <div class="output-container">
+      <iframe id="output" title="Code Output"></iframe>
     </div>
   </div>
   
-  <div class="buttons">
-    <button onclick="formatCode('html')"><i class="fas fa-indent"></i> Format HTML</button>
-    <button onclick="formatCode('css')"><i class="fas fa-indent"></i> Format CSS</button>
-    <button onclick="formatCode('js')"><i class="fas fa-indent"></i> Format JS</button>
-    <button onclick="clearCode()"><i class="fas fa-trash"></i> Clear</button>
+  <div class="mobile-tabs">
+    <button class="active" onclick="switchTab('html')"><i class="fas fa-code"></i>HTML</button>
+    <button onclick="switchTab('css')"><i class="fab fa-css3-alt"></i>CSS</button>
+    <button onclick="switchTab('js')"><i class="fab fa-js-square"></i>JS</button>
+    <button onclick="runCode()"><i class="fas fa-play"></i>Run</button>
   </div>
   
-  <div class="output-container">
-    <iframe id="output" title="Code Output"></iframe>
-  </div>
+  <div class="overlay" id="overlay"></div>
   
   <div class="learning-panel" id="learning-panel">
     <button class="close-panel" onclick="toggleLearningPanel()">&times;</button>
@@ -324,6 +483,11 @@
     const jsEditor = document.getElementById('js-code');
     const outputFrame = document.getElementById('output');
     const learningPanel = document.getElementById('learning-panel');
+    const overlay = document.getElementById('overlay');
+    const htmlPane = document.getElementById('html-pane');
+    const cssPane = document.getElementById('css-pane');
+    const jsPane = document.getElementById('js-pane');
+    const mobileTabButtons = document.querySelectorAll('.mobile-tabs button');
     
     // Auto-complete tags when typing
     htmlEditor.addEventListener('keydown', function(e) {
@@ -357,6 +521,7 @@
         <html>
           <head>
             <style>${css}</style>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
           <body>${html}
             <script>${js}<\/script>
@@ -467,7 +632,29 @@ button {
     
     // Toggle learning panel
     function toggleLearningPanel() {
-      learningPanel.style.display = learningPanel.style.display === 'block' ? 'none' : 'block';
+      learningPanel.classList.toggle('show');
+      overlay.classList.toggle('show');
+      document.body.style.overflow = learningPanel.classList.contains('show') ? 'hidden' : '';
+    }
+    
+    // Switch between tabs on mobile
+    function switchTab(tab) {
+      htmlPane.classList.remove('active');
+      cssPane.classList.remove('active');
+      jsPane.classList.remove('active');
+      
+      mobileTabButtons.forEach(btn => btn.classList.remove('active'));
+      
+      if (tab === 'html') {
+        htmlPane.classList.add('active');
+        mobileTabButtons[0].classList.add('active');
+      } else if (tab === 'css') {
+        cssPane.classList.add('active');
+        mobileTabButtons[1].classList.add('active');
+      } else if (tab === 'js') {
+        jsPane.classList.add('active');
+        mobileTabButtons[2].classList.add('active');
+      }
     }
     
     // Insert code examples from learning panel
@@ -530,6 +717,9 @@ greet();`;
       toggleLearningPanel();
     }
     
+    // Close panel when clicking overlay
+    overlay.addEventListener('click', toggleLearningPanel);
+    
     // Initialize the app
     function init() {
       // Load saved code if exists
@@ -548,9 +738,23 @@ greet();`;
       
       // Run initial example
       loadExample();
+      
+      // Check if mobile device
+      if (window.innerWidth <= 768) {
+        switchTab('html');
+      }
     }
     
     window.addEventListener('DOMContentLoaded', init);
+    window.addEventListener('resize', function() {
+      if (window.innerWidth > 768) {
+        htmlPane.classList.add('active');
+        cssPane.classList.add('active');
+        jsPane.classList.add('active');
+      } else {
+        switchTab('html');
+      }
+    });
   </script>
 </body>
 </html>
